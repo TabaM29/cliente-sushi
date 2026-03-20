@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\ContactoController;
+use App\Http\Controllers\CarritoController;
 
 // Inicio
 Route::get('/', function () {
@@ -21,3 +22,10 @@ Route::get('/detalle/{id}', [CatalogoController::class, 'show'])->name('detalle'
 // Contacto (Solo Formulario y Envío)
 Route::get('/contacto', [ContactoController::class, 'index'])->name('contacto.index');
 Route::post('/contacto', [ContactoController::class, 'store'])->name('contacto.store');
+
+// Carrito
+Route::get('/carrito', [CarritoController::class, 'index'])->name('carrito.index');
+Route::post('/carrito/add', [CarritoController::class, 'add'])->name('carrito.add');
+Route::patch('/carrito/update', [CarritoController::class, 'update'])->name('carrito.update');
+Route::delete('/carrito/remove', [CarritoController::class, 'remove'])->name('carrito.remove');
+Route::get('/carrito/clear', [CarritoController::class, 'clear'])->name('carrito.clear');

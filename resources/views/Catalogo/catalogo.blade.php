@@ -30,7 +30,7 @@
                         <div class="flex justify-between items-center">
                             <span class="text-xl font-bold text-orange-600">${{ number_format($p->precio, 2) }}</span>
                             
-                            {{-- AQUÍ ESTÁ EL BOTÓN NARANJA CORREGIDO --}}
+                            {{-- Botón de detalles --}}
                             <a href="{{ route('detalle', $p->id) }}" class="text-white bg-orange-600 hover:bg-orange-700 focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-4 py-2 text-center transition">
                                 Detalles →
                             </a>
