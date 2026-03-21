@@ -39,7 +39,7 @@
                                     <input type="number" name="cantidad" value="{{ $detalles['cantidad'] }}" min="1"
                                         onchange="this.form.submit()"
                                         class="w-12 bg-transparent text-center font-bold text-gray-700 border-none focus:ring-0">
-                                    
+
                                 </form>
                             </div>
 
@@ -97,10 +97,10 @@
                             </div>
                         </div>
 
-                        <button
-                            class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-orange-900/20">
+                        <a href="{{ url('pedidos/checkout') }}"
+                            class="block text-center w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-orange-900/20">
                             Finalizar Pedido
-                        </button>
+                        </a>
 
                         <p class="text-[10px] text-gray-500 mt-6 text-center uppercase tracking-widest font-bold">
                             Pago seguro garantizado por SushiZen

@@ -15,6 +15,7 @@
             <a href="{{ route('inicio') }}" class="flex items-center">
                 <span class="self-center text-xl font-semibold whitespace-nowrap text-orange-600">SushiZen</span>
             </a>
+
             <div class="hidden justify-between items-center w-full lg:flex lg:w-auto lg:order-1">
                 <ul class="flex flex-col mt-4 font-medium lg:flex-row lg:space-x-8 lg:mt-0 items-center">
                     <li>
@@ -34,6 +35,7 @@
                             class="block py-2 pr-4 pl-3 text-gray-700 hover:text-orange-600 transition-colors">Contacto</a>
                     </li>
 
+                    {{-- Ícono del Carrito --}}
                     <li class="ml-4">
                         <a href="{{ route('carrito.index') }}"
                             class="relative group p-2 flex items-center justify-center rounded-full hover:bg-orange-50 transition-all">
@@ -44,7 +46,6 @@
                                     d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
                                 </path>
                             </svg>
-
                             @if (count(session('carrito', [])) > 0)
                                 <span
                                     class="absolute -top-1 -right-1 bg-orange-600 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-sm">
@@ -53,12 +54,60 @@
                             @endif
                         </a>
                     </li>
+
+                    {{-- LÓGICA DE AUTENTICACIÓN --}}
+                    <li class="ml-4 border-l border-gray-200 pl-6 flex items-center gap-4">
+                        @if (session()->has('cliente_token'))
+                            {{-- Usuario LOGUEADO --}}
+                            <a href="{{ route('perfil.index') }}"
+                                class="flex items-center gap-2 text-gray-700 hover:text-orange-600 transition-colors font-medium">
+                                {{-- Avatar (Muestra una imagen por defecto si no tiene foto) --}}
+                                @if (session()->has('cliente_data') && !empty(session('cliente_data')['foto']))
+                                    @php
+                                        $fotoUrl = session('cliente_data')['foto'];
+                                        // 1. Quitamos cualquier prefijo 'storage/' que ya traiga para evitar duplicados
+                                        $pathLimpio = str_replace('storage/', '', $fotoUrl);
+
+                                        // 2. Si no es una URL externa, construimos la URL hacia la API
+                                        if (!str_starts_with($fotoUrl, 'http')) {
+                                            $fotoUrl = 'http://127.0.0.1:8000/storage/' . $pathLimpio;
+                                        }
+                                    @endphp
+                                    <img src="{{ $fotoUrl }}"
+                                        class="w-8 h-8 rounded-full object-cover border border-gray-200"
+                                        onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(session('cliente_data')['nombres']) }}&background=fed7aa&color=ea580c'">
+                                @else
+                                    {{-- Círculo con inicial o ícono si no hay foto --}}
+                                @endif
+                                <span>{{ session('cliente_data')['nombres'] ?? 'Mi Perfil' }}</span>
+                            </a>
+
+                            {{-- Formulario para cerrar sesión --}}
+                            <form action="{{ route('logout.cliente') }}" method="POST" class="m-0">
+                                @csrf
+                                <button type="submit"
+                                    class="text-sm text-red-500 hover:text-red-700 font-medium transition-colors">
+                                    Salir
+                                </button>
+                            </form>
+                        @else
+                            {{-- Usuario INVITADO --}}
+                            <a href="{{ route('login.cliente') }}"
+                                class="text-gray-700 hover:text-orange-600 font-medium transition-colors">
+                                Iniciar Sesión
+                            </a>
+                            <a href="{{ route('registro.cliente') }}"
+                                class="bg-orange-600 text-white px-5 py-2 rounded-full font-bold hover:bg-orange-700 transition-all shadow-sm">
+                                Registrarse
+                            </a>
+                        @endif
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <main class="min-h-screen pt-20">
+    <main class="min-h-screen pt-10">
         @yield('content')
     </main>
 
