@@ -97,7 +97,7 @@
                             </div>
                         </div>
 
-                        <a href="{{ url('pedidos/checkout') }}"
+                        <a href="{{ route('pedidos.checkout') }}"
                             class="block text-center w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-orange-900/20">
                             Finalizar Pedido
                         </a>

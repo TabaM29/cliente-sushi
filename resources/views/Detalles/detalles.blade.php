@@ -1,114 +1,120 @@
 @extends('layouts.plantilla')
 
 @section('content')
-    @php $producto = (object) $producto; @endphp
+    @php
+        $producto = (object) $producto;
+        $estaDisponible = $producto->status == 'activo' && $producto->stock > 0;
+    @endphp
 
     <div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+        {{-- Migajas de pan para navegación --}}
+        <nav class="flex mb-8 text-sm text-gray-500">
+            <a href="{{ route('catalogo') }}" class="hover:text-orange-600">Menú</a>
+            <span class="mx-2">/</span>
+            <span class="font-bold text-gray-900">{{ $producto->nombre }}</span>
+        </nav>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
             {{-- Sección de Imágenes --}}
             <div class="space-y-4">
-                <div class="relative h-96 overflow-hidden rounded-2xl shadow-lg border">
-                    <img id="current-img" src="{{ $producto->imagen1 }}" class="w-full h-full object-cover">
+                <div class="relative aspect-square overflow-hidden rounded-3xl shadow-lg border-4 border-white">
+                    <img id="current-img" src="{{ $producto->imagen1 }}"
+                        class="w-full h-full object-cover transition-all duration-500 {{ !$estaDisponible ? 'grayscale opacity-70' : '' }}">
+
+                    @if (!$estaDisponible)
+                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <span
+                                class="bg-white text-red-600 font-black px-8 py-3 rounded-full shadow-2xl uppercase tracking-tighter text-xl">
+                                Agotado
+                            </span>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-3 gap-4">
-                    @if(isset($producto->imagen1))
-                    <button onclick="document.getElementById('current-img').src='{{ $producto->imagen1 }}'"
-                        class="rounded-lg overflow-hidden border hover:border-orange-500 transition focus:ring-2 focus:ring-orange-500">
-                        <img src="{{ $producto->imagen1 }}" class="h-24 w-full object-cover">
-                    </button>
-                    @endif
-                    @if(isset($producto->imagen2))
-                    <button onclick="document.getElementById('current-img').src='{{ $producto->imagen2 }}'"
-                        class="rounded-lg overflow-hidden border hover:border-orange-500 transition focus:ring-2 focus:ring-orange-500">
-                        <img src="{{ $producto->imagen2 }}" class="h-24 w-full object-cover">
-                    </button>
-                    @endif
-                    @if(isset($producto->imagen3))
-                    <button onclick="document.getElementById('current-img').src='{{ $producto->imagen3 }}'"
-                        class="rounded-lg overflow-hidden border hover:border-orange-500 transition focus:ring-2 focus:ring-orange-500">
-                        <img src="{{ $producto->imagen3 }}" class="h-24 w-full object-cover">
-                    </button>
-                    @endif
+                    @for ($i = 1; $i <= 3; $i++)
+                        @php $imgField = "imagen$i"; @endphp
+                        @if (isset($producto->$imgField))
+                            <button onclick="document.getElementById('current-img').src='{{ $producto->$imgField }}'"
+                                class="rounded-2xl overflow-hidden border-2 border-transparent hover:border-orange-500 transition focus:ring-4 focus:ring-orange-200">
+                                <img src="{{ $producto->$imgField }}"
+                                    class="h-24 w-full object-cover {{ !$estaDisponible ? 'grayscale' : '' }}">
+                            </button>
+                        @endif
+                    @endfor
                 </div>
             </div>
 
-            {{-- Sección de Información y Botones --}}
-            <div class="flex flex-col justify-center">
-                <h1 class="text-4xl font-black text-gray-900 mb-4">{{ $producto->nombre }}</h1>
-                <p class="text-gray-500 text-lg mb-6 leading-relaxed">{{ $producto->detalles }}</p>
+            {{-- Sección de Información --}}
+            <div class="flex flex-col">
+                <div class="mb-4">
+                    @if ($estaDisponible)
+                        <span
+                            class="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full uppercase">Platillo
+                            Popular</span>
+                    @endif
+                </div>
 
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <div class="flex items-baseline mb-4">
-                        <span class="text-4xl font-bold text-orange-600">${{ number_format($producto->precio, 2) }}</span>
-                    </div>
+                <h1 class="text-5xl font-black text-gray-900 mb-4 tracking-tight">
+                    {{ $producto->nombre }}
+                </h1>
 
-                    {{-- Lógica de Disponibilidad basada en Status --}}
-                    <div class="mb-6">
-                        @if ($producto->status == 'activo')
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                <span class="w-2 h-2 mr-2 bg-green-500 rounded-full"></span>
-                                Disponible ahora
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                <span class="w-2 h-2 mr-2 bg-red-500 rounded-full"></span>
-                                Agotado temporalmente
-                            </span>
-                        @endif
-                    </div>
+                <p class="text-gray-600 text-xl mb-8 leading-relaxed">{{ $producto->detalles }}</p>
 
-                    {{-- Panel de Acciones Condicional --}}
-                    @if ($producto->status == 'activo')
-                        <div class="space-y-3">
-                            {{-- 1. Botón de Agregar al Carrito (Formulario) --}}
-                            <form action="{{ route('carrito.add') }}" method="POST">
-                                @csrf
-                                <input type="hidden" name="id" value="{{ $producto->id }}">
-                                <input type="hidden" name="nombre" value="{{ $producto->nombre }}">
-                                <input type="hidden" name="precio" value="{{ $producto->precio }}">
-                                <input type="hidden" name="imagen" value="{{ $producto->imagen1 }}">
-
-                                <button type="submit" class="w-full bg-orange-600 text-white px-6 py-4 rounded-xl font-bold text-lg hover:bg-orange-700 transition-all flex justify-center items-center gap-2 shadow-md hover:shadow-lg">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                    Agregar al Carrito
-                                </button>
-                            </form>
-
-                            {{-- Botones Secundarios --}}
-                            <div class="flex flex-col sm:flex-row gap-3 pt-2">
-                                {{-- 2. Botón Continuar a Compra (Ir al carrito) --}}
-                                <a href="{{ route('carrito.index') }}" class="flex-1 bg-gray-900 text-white text-center px-4 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors flex justify-center items-center gap-2">
-                                    Continuar a compra
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                </a>
-
-                                {{-- 3. Botón Agregar más productos (Ir al catálogo) --}}
-                                <a href="{{ route('catalogo') }}" class="flex-1 bg-white border-2 border-orange-200 text-orange-600 text-center px-4 py-3 rounded-xl font-bold hover:bg-orange-50 hover:border-orange-500 transition-colors">
-                                    Ver más platillos
-                                </a>
-                            </div>
+                <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <p class="text-sm text-gray-400 font-bold uppercase tracking-widest">Precio Unitario</p>
+                            <span
+                                class="text-5xl font-black text-orange-600">${{ number_format($producto->precio, 2) }}</span>
                         </div>
+                        <div class="text-right">
+                            @if ($estaDisponible)
+                                <p class="text-sm text-green-600 font-bold italic">¡En Stock!</p>
+                                <p class="text-xs text-gray-400">{{ $producto->stock }} unidades disponibles</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if ($estaDisponible)
+                        <form action="{{ route('carrito.add') }}" method="POST" class="space-y-4">
+                            @csrf
+                            <input type="hidden" name="id" value="{{ $producto->id }}">
+                            <input type="hidden" name="nombre" value="{{ $producto->nombre }}">
+                            <input type="hidden" name="precio" value="{{ $producto->precio }}">
+                            <input type="hidden" name="imagen" value="{{ $producto->imagen1 }}">
+
+                            {{-- Botón Principal --}}
+                            <button type="submit"
+                                class="w-full bg-orange-600 text-white px-6 py-5 rounded-2xl font-black text-xl hover:bg-orange-700 hover:scale-[1.02] active:scale-95 transition-all flex justify-center items-center gap-3 shadow-xl shadow-orange-200">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                                Agregar a la orden
+                            </button>
+                        </form>
                     @else
-                        <button disabled class="w-full bg-gray-300 text-gray-500 py-4 rounded-xl font-bold cursor-not-allowed">
-                            Agotado
-                        </button>
-                        <div class="mt-4 text-center">
-                            <a href="{{ route('catalogo') }}" class="text-orange-600 font-bold hover:underline">
-                                Ver opciones similares
+                        <div class="bg-gray-100 p-6 rounded-2xl text-center">
+                            <p class="text-gray-500 font-bold mb-4">Este producto no está disponible por el momento.</p>
+                            <a href="{{ route('catalogo') }}"
+                                class="text-orange-600 font-black hover:underline underline-offset-4">
+                                VER OTROS PLATILLOS →
                             </a>
                         </div>
                     @endif
-                </div>
-                
-                {{-- Mensaje de éxito si se acaba de agregar --}}
-                @if(session('success'))
-                    <div class="mt-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-3">
-                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <span class="font-medium">{{ session('success') }}</span>
+
+                    <div class="mt-6 flex gap-4">
+                        <a href="{{ route('catalogo') }}"
+                            class="flex-1 text-center py-3 text-sm font-bold text-gray-400 hover:text-gray-600 transition">Volver
+                            al Menú</a>
+                        @if (session('carrito'))
+                            <a href="{{ route('carrito.index') }}"
+                                class="flex-1 text-center py-3 text-sm font-bold text-orange-600 bg-orange-50 rounded-xl hover:bg-orange-100 transition">Ver
+                                mi Carrito</a>
+                        @endif
                     </div>
-                @endif
+                </div>
             </div>
         </div>
     </div>

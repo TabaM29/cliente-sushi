@@ -6,6 +6,7 @@ use App\Http\Controllers\ContactoController;
 use App\Http\Controllers\CarritoController;
 use App\Http\Controllers\ClienteAuthController;
 use App\Http\Controllers\PerfilController;
+use App\Http\Controllers\PedidosController;
 
 // Inicio
 Route::get('/', function () {
@@ -50,4 +51,15 @@ Route::middleware(['check.token'])->group(function () {
         Route::post('/foto', [PerfilController::class, 'updateFoto'])->name('perfil.updateFoto');
         Route::put('/password', [PerfilController::class, 'updatePassword'])->name('perfil.updatePassword');
     });
+
+        //Rutas de pedidos
+    Route::prefix('pedidos')->group(function () {
+    Route::get('/pedidos', [PedidosController::class, 'index'])->name('pedidos.index');
+    Route::get('/pedidos/{id}', [PedidosController::class, 'show'])->name('pedidos.show');
+    Route::delete('/pedidos/{id}', [PedidosController::class, 'destroy'])->name('pedidos.destroy');
+    
+    Route::get('/checkout', [PedidosController::class, 'checkout'])->name('pedidos.checkout');
+    Route::post('/confirmar', [PedidosController::class, 'store'])->name('pedidos.store');
+    Route::get('/exito', [PedidosController::class, 'exito'])->name('pedidos.exito');
+});
 });

@@ -35,7 +35,7 @@
                             class="block py-2 pr-4 pl-3 text-gray-700 hover:text-orange-600 transition-colors">Contacto</a>
                     </li>
 
-                    {{-- Ícono del Carrito --}}
+                    {{-- Ícono del Carrito (Visible para todos) --}}
                     <li class="ml-4">
                         <a href="{{ route('carrito.index') }}"
                             class="relative group p-2 flex items-center justify-center rounded-full hover:bg-orange-50 transition-all">
@@ -58,17 +58,26 @@
                     {{-- LÓGICA DE AUTENTICACIÓN --}}
                     <li class="ml-4 border-l border-gray-200 pl-6 flex items-center gap-4">
                         @if (session()->has('cliente_token'))
-                            {{-- Usuario LOGUEADO --}}
+                            {{-- ==========================================
+                                 ESTO SOLO LO VEN LOS CLIENTES LOGUEADOS 
+                                 ========================================== --}}
+                            
+                            {{-- Enlace a Mis Pedidos --}}
+                            <a href="{{ route('pedidos.index') }}" 
+                               class="flex items-center gap-1 text-gray-700 hover:text-orange-600 transition-colors font-bold">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                <span>Mis Pedidos</span>
+                            </a>
+
+                            {{-- Perfil del Usuario --}}
                             <a href="{{ route('perfil.index') }}"
-                                class="flex items-center gap-2 text-gray-700 hover:text-orange-600 transition-colors font-medium">
-                                {{-- Avatar (Muestra una imagen por defecto si no tiene foto) --}}
+                                class="flex items-center gap-2 text-gray-700 hover:text-orange-600 transition-colors font-medium ml-2">
                                 @if (session()->has('cliente_data') && !empty(session('cliente_data')['foto']))
                                     @php
                                         $fotoUrl = session('cliente_data')['foto'];
-                                        // 1. Quitamos cualquier prefijo 'storage/' que ya traiga para evitar duplicados
                                         $pathLimpio = str_replace('storage/', '', $fotoUrl);
-
-                                        // 2. Si no es una URL externa, construimos la URL hacia la API
                                         if (!str_starts_with($fotoUrl, 'http')) {
                                             $fotoUrl = 'http://127.0.0.1:8000/storage/' . $pathLimpio;
                                         }
@@ -76,13 +85,11 @@
                                     <img src="{{ $fotoUrl }}"
                                         class="w-8 h-8 rounded-full object-cover border border-gray-200"
                                         onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(session('cliente_data')['nombres']) }}&background=fed7aa&color=ea580c'">
-                                @else
-                                    {{-- Círculo con inicial o ícono si no hay foto --}}
                                 @endif
                                 <span>{{ session('cliente_data')['nombres'] ?? 'Mi Perfil' }}</span>
                             </a>
 
-                            {{-- Formulario para cerrar sesión --}}
+                            {{-- Cerrar sesión --}}
                             <form action="{{ route('logout.cliente') }}" method="POST" class="m-0">
                                 @csrf
                                 <button type="submit"
@@ -90,8 +97,11 @@
                                     Salir
                                 </button>
                             </form>
+
                         @else
-                            {{-- Usuario INVITADO --}}
+                            {{-- ==========================================
+                                 ESTO LO VEN LOS INVITADOS (NO LOGUEADOS)
+                                 ========================================== --}}
                             <a href="{{ route('login.cliente') }}"
                                 class="text-gray-700 hover:text-orange-600 font-medium transition-colors">
                                 Iniciar Sesión

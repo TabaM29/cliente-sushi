@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class CarritoController extends Controller
 {
+    // URL base de tu API
+    private $apiUrl = 'http://127.0.0.1:8000/api';
+
     // Ver el contenido del carrito
     public function index()
     {
@@ -21,15 +25,28 @@ class CarritoController extends Controller
     // Agregar producto al carrito
     public function add(Request $request)
     {
+        $id = $request->id;
         $carrito = session()->get('carrito', []);
 
-        $id = $request->id;
+        $response = Http::get("{$this->apiUrl}/platillos/{$id}");
+        
+        if (!$response->successful()) {
+            return redirect()->back()->with('error', 'No se pudo verificar el stock del producto.');
+        }
 
-        // Si el producto ya está, aumentamos cantidad
+        $platilloData = $response->json()['data']['platillo'] ?? $response->json()['data'];
+        $stockDisponible = $platilloData['stock'];
+
+        $cantidadActual = isset($carrito[$id]) ? $carrito[$id]['cantidad'] : 0;
+        $nuevaCantidad = $cantidadActual + 1;
+
+        if ($nuevaCantidad > $stockDisponible) {
+            return redirect()->back()->with('error', "No hay suficiente stock. Solo quedan {$stockDisponible} unidades de {$platilloData['nombre']}.");
+        }
+
         if(isset($carrito[$id])) {
             $carrito[$id]['cantidad']++;
         } else {
-            // Si es nuevo, lo agregamos con los datos enviados
             $carrito[$id] = [
                 "nombre" => $request->nombre,
                 "cantidad" => 1,
@@ -42,18 +59,31 @@ class CarritoController extends Controller
         return redirect()->back()->with('success', 'Producto agregado al carrito');
     }
 
-    // Actualizar cantidad
     public function update(Request $request)
     {
         if($request->id && $request->cantidad){
+            $id = $request->id;
+            $nuevaCantidad = $request->cantidad;
+
+            $response = Http::get("{$this->apiUrl}/platillos/{$id}");
+            
+            if ($response->successful()) {
+                $platilloData = $response->json()['data']['platillo'] ?? $response->json()['data'];
+                $stockDisponible = $platilloData['stock'];
+
+                if ($nuevaCantidad > $stockDisponible) {
+                    return redirect()->back()->with('error', "No puedes agregar {$nuevaCantidad}. Solo quedan {$stockDisponible} en stock.");
+                }
+            }
+
             $carrito = session()->get('carrito');
-            $carrito[$request->id]["cantidad"] = $request->cantidad;
+            $carrito[$id]["cantidad"] = $nuevaCantidad;
             session()->put('carrito', $carrito);
+            
             return redirect()->back()->with('success', 'Carrito actualizado');
         }
     }
 
-    // Eliminar un producto
     public function remove(Request $request)
     {
         if($request->id) {
@@ -71,5 +101,40 @@ class CarritoController extends Controller
     {
         session()->forget('carrito');
         return redirect()->back()->with('success', 'Carrito vaciado');
+    }
+
+    public function checkout()
+    {
+        $carrito = session()->get('carrito', []);
+        if (empty($carrito)) {
+            return redirect()->back()->with('error', 'El carrito está vacío');
+        }
+
+        $total = 0;
+        $productosParaEnviar = [];
+
+        foreach ($carrito as $id => $detalles) {
+            $total += $detalles['precio'] * $detalles['cantidad'];
+            $productosParaEnviar[] = [
+                'platillo_id' => $id,
+                'cantidad' => $detalles['cantidad'],
+                'precio_unitario' => $detalles['precio']
+            ];
+        }
+
+        $token = session('cliente_token'); 
+
+        $response = Http::withToken($token)
+            ->post("{$this->apiUrl}/pedidos", [
+                'total' => $total,
+                'productos' => $productosParaEnviar
+            ]);
+
+        if ($response->successful()) {
+            session()->forget('carrito'); 
+            return redirect()->route('mis_pedidos.index')->with('success', '¡Pedido confirmado!');
+        }
+
+        return redirect()->back()->with('error', 'Hubo un error al procesar el pedido.');
     }
 }
