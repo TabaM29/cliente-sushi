@@ -4,27 +4,30 @@
     <div class="min-h-[70vh] flex items-center justify-center px-4 py-10">
         <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 text-center border border-gray-100">
 
-            {{-- Icono de Check --}}
+            {{-- Icono de Reloj o Tarjeta para indicar "Pendiente de Pago" --}}
             <div class="mb-6 flex justify-center">
-                <div class="bg-green-100 p-4 rounded-full">
-                    <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                <div class="bg-blue-100 p-4 rounded-full animate-pulse">
+                    <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
                     </svg>
                 </div>
             </div>
 
-            <h1 class="text-3xl font-black text-gray-900 mb-2">¡Pedido Recibido!</h1>
-            <p class="text-gray-500 mb-6">Tu orden ha sido procesada correctamente.</p>
+            <h1 class="text-3xl font-black text-gray-900 mb-2">¡Orden Generada!</h1>
+            <p class="text-gray-500 mb-6 font-medium">Solo falta un paso para procesar tu pedido.</p>
 
-            {{-- RESUMEN DE COMPRA (Lo nuevo) --}}
+            {{-- RESUMEN DE COMPRA --}}
             @if(session('resumen'))
             <div class="bg-gray-50 rounded-2xl p-5 mb-6 border border-gray-100">
-                <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4 text-left">Resumen de compra</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Resumen</h3>
+                    <span class="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold uppercase">Pendiente</span>
+                </div>
                 
                 <div class="space-y-3">
                     @foreach(session('resumen') as $item)
                     <div class="flex justify-between items-center text-sm">
-                        <span class="text-gray-700 font-medium">
+                        <span class="text-gray-700 font-medium text-left">
                             <span class="text-orange-600 font-bold">{{ $item['cantidad'] }}x</span> {{ $item['nombre'] }}
                         </span>
                         <span class="text-gray-900 font-bold">${{ number_format($item['precio'] * $item['cantidad'], 2) }}</span>
@@ -33,37 +36,29 @@
                 </div>
 
                 <div class="mt-4 pt-4 border-t border-dashed border-gray-300 flex justify-between items-center">
-                    <span class="text-gray-900 font-black text-lg">Total Pagado:</span>
+                    <span class="text-gray-900 font-black text-lg">Total a Pagar:</span>
                     <span class="text-orange-600 font-black text-xl">${{ number_format(session('totalPagado'), 2) }}</span>
                 </div>
             </div>
             @endif
 
-            {{-- Estado del flujo --}}
-            <div class="space-y-2 mb-8 text-left bg-orange-50/50 p-4 rounded-xl border border-orange-100">
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
-                    <p class="text-xs font-bold text-orange-800 uppercase">Stock actualizado en BD</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
-                    <p class="text-xs font-bold text-orange-800 uppercase">Carrito vaciado</p>
-                </div>
-            </div>
-
-            {{-- Botones --}}
+            {{-- BOTÓN PRINCIPAL: IR A PAGAR --}}
             <div class="space-y-3">
+                @if(session('pedido_id'))
+                    <a href="{{ route('pedidos.pagar', session('pedido_id')) }}"
+                        class="block w-full bg-blue-600 text-white font-black py-5 rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 uppercase tracking-widest text-sm flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Pagar Ahora con PayPal
+                    </a>
+                @endif
+
                 <a href="{{ route('pedidos.index') }}"
-                    class="block w-full bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-all shadow-lg">
-                    Ver mis pedidos
-                </a>
-                <a href="{{ route('catalogo') }}"
-                    class="block w-full bg-white text-orange-600 border-2 border-orange-100 font-bold py-3 rounded-xl hover:bg-orange-50 transition-all">
-                    Seguir comprando
+                    class="block w-full bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-all text-xs">
+                    Ver detalles del pedido y pagar después
                 </a>
             </div>
 
-            <p class="mt-8 text-xs text-gray-400 italic">Gracias por confiar en nosotros.</p>
+            <p class="mt-8 text-[10px] text-gray-400 uppercase tracking-widest font-bold">Pago seguro procesado por PayPal</p>
         </div>
     </div>
 @endsection

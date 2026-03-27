@@ -41,7 +41,7 @@ Route::post('/register', [ClienteAuthController::class, 'register'])->name('regi
 
 // RUTAS PROTEGIDAS (Solo si el cliente tiene sesión/token activo)
 Route::middleware(['check.token'])->group(function () {
-    
+
     Route::post('/logout', [ClienteAuthController::class, 'logout'])->name('logout.cliente');
 
     // RUTAS DE PERFIL DE CLIENTE 
@@ -52,14 +52,23 @@ Route::middleware(['check.token'])->group(function () {
         Route::put('/password', [PerfilController::class, 'updatePassword'])->name('perfil.updatePassword');
     });
 
-        //Rutas de pedidos
+    //Rutas de pedidos
+Route::middleware(['check.token'])->group(function () {
     Route::prefix('pedidos')->group(function () {
-    Route::get('/pedidos', [PedidosController::class, 'index'])->name('pedidos.index');
-    Route::get('/pedidos/{id}', [PedidosController::class, 'show'])->name('pedidos.show');
-    Route::delete('/pedidos/{id}', [PedidosController::class, 'destroy'])->name('pedidos.destroy');
-    
-    Route::get('/checkout', [PedidosController::class, 'checkout'])->name('pedidos.checkout');
-    Route::post('/confirmar', [PedidosController::class, 'store'])->name('pedidos.store');
-    Route::get('/exito', [PedidosController::class, 'exito'])->name('pedidos.exito');
+        Route::get('/', [PedidosController::class, 'index'])->name('pedidos.index');
+        
+        Route::get('/ver/{id}', [PedidosController::class, 'show'])->name('pedidos.show');
+        
+        Route::delete('/{id}', [PedidosController::class, 'destroy'])->name('pedidos.destroy');
+        
+        Route::get('/{id}/pagar', [PedidosController::class, 'pagar'])->name('pedidos.pagar');
+        
+        Route::get('/confirmar-pago/{pedidoId}/{transaccionId}', [PedidosController::class, 'confirmarPago'])->name('pedidos.confirmarPago');
+        
+        // Flujo de compra
+        Route::get('/checkout', [PedidosController::class, 'checkout'])->name('pedidos.checkout');
+        Route::post('/confirmar', [PedidosController::class, 'store'])->name('pedidos.store');
+        Route::get('/exito', [PedidosController::class, 'exito'])->name('pedidos.exito');
+    });
 });
 });

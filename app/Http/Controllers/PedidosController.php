@@ -11,116 +11,159 @@ class PedidosController extends Controller
     public function checkout()
     {
         $carrito = session()->get('carrito', []);
-        
+
         if (empty($carrito)) {
             return redirect()->route('carrito.index')->with('error', 'Tu carrito está vacío.');
         }
 
         $total = 0;
-        foreach($carrito as $item) {
+        foreach ($carrito as $item) {
             $total += $item['precio'] * $item['cantidad'];
         }
 
         return view('pedidos.pedido', compact('carrito', 'total'));
     }
 
-public function store(Request $request)
-{
-    $carrito = session()->get('carrito', []);
-    $token = session('cliente_token'); 
+    public function store(Request $request)
+    {
+        $carrito = session()->get('carrito', []);
+        $token = session('cliente_token');
 
-    if (empty($carrito)) {
-        return redirect()->route('carrito.index')->with('error', 'El carrito está vacío.');
+        if (empty($carrito)) {
+            return redirect()->route('carrito.index')->with('error', 'El carrito está vacío.');
+        }
+
+        // 1. Preparar datos
+        $total = 0;
+        $productos = [];
+        foreach ($carrito as $id => $detalles) {
+            $total += $detalles['precio'] * $detalles['cantidad'];
+            $productos[] = [
+                'platillo_id' => $id,
+                'cantidad' => $detalles['cantidad'],
+                'precio_unitario' => $detalles['precio']
+            ];
+        }
+
+        $response = Http::withToken($token)->post('http://127.0.0.1:8000/api/pedidos', [
+            'total' => $total,
+            'productos' => $productos
+        ]);
+
+        if ($response->successful()) {
+            $resumen = session('carrito'); // Guardamos una copia antes de borrar
+            $totalPagado = $total; // La variable total que calculaste
+
+            session()->forget('carrito');
+
+            // Pasamos el resumen a la redirección
+            return redirect()->route('pedidos.exito')->with([
+                'resumen' => $resumen,
+                'totalPagado' => $totalPagado
+            ]);
+        }
+
+        return back()->with('error', 'Error en la API: ' . $response->json()['mensaje']);
     }
-
-    // 1. Preparar datos
-    $total = 0;
-    $productos = [];
-    foreach ($carrito as $id => $detalles) {
-        $total += $detalles['precio'] * $detalles['cantidad'];
-        $productos[] = [
-            'platillo_id'      => $id,
-            'cantidad'         => $detalles['cantidad'],
-            'precio_unitario'  => $detalles['precio']
-        ];
-    }
-
-    $response = Http::withToken($token)->post('http://127.0.0.1:8000/api/pedidos', [
-        'total'     => $total,
-        'productos' => $productos
-    ]);
-
-    if ($response->successful()) {
-    $resumen = session('carrito'); // Guardamos una copia antes de borrar
-    $totalPagado = $total; // La variable total que calculaste
-
-    session()->forget('carrito');
-    
-    // Pasamos el resumen a la redirección
-    return redirect()->route('pedidos.exito')->with([
-        'resumen' => $resumen,
-        'totalPagado' => $totalPagado
-    ]);
-}
-
-    return back()->with('error', 'Error en la API: ' . $response->json()['mensaje']);
-}
 
     public function exito()
     {
         return view('pedidos.exito');
     }
 
-    public function index() {
-    $token = session('cliente_token');
-    
-    $response = Http::withToken($token)->get('http://127.0.0.1:8000/api/pedidos');
-    
-    $pedidos = $response->json()['data'] ?? [];
-    return view('pedidos.index', compact('pedidos'));
-}
+    public function index()
+    {
+        $token = session('cliente_token');
 
-public function show($id)
-{
-    $token = session('cliente_token');
-    
-    $resPedido = Http::withToken($token)->get("http://127.0.0.1:8000/api/pedidos/{$id}");
-    $jsonPedido = $resPedido->json();
+        $response = Http::withToken($token)->get('http://127.0.0.1:8000/api/pedidos');
 
-    $pedido = $jsonPedido['data']['pedido'] ?? null;
-
-    if (!$pedido) {
-        return redirect()->route('pedidos.index')->with('error', 'No se encontró el pedido');
+        $pedidos = $response->json()['data'] ?? [];
+        return view('pedidos.index', compact('pedidos'));
     }
 
-    $resPlatillos = Http::get("http://127.0.0.1:8000/api/platillos");
-    $jsonPlatillos = $resPlatillos->json();
-    
-    $listaPlatillos = $jsonPlatillos['data']['platillos'] ?? [];
-    $platillos = collect($listaPlatillos);
+    public function show($id)
+    {
+        $token = session('cliente_token');
 
-    $detalles = $pedido['detalles'] ?? [];
-    foreach ($detalles as $key => $detalle) {
-        $infoPlatillo = $platillos->where('id', $detalle['platillo_id'])->first();
-        $detalles[$key]['nombre_platillo'] = $infoPlatillo['nombre'] ?? 'Platillo #' . $detalle['platillo_id'];
+        $resPedido = Http::withToken($token)->get("http://127.0.0.1:8000/api/pedidos/{$id}");
+        $jsonPedido = $resPedido->json();
+
+        $pedido = $jsonPedido['data']['pedido'] ?? null;
+
+        if (!$pedido) {
+            return redirect()->route('pedidos.index')->with('error', 'No se encontró el pedido');
+        }
+
+        $resPlatillos = Http::get("http://127.0.0.1:8000/api/platillos");
+        $jsonPlatillos = $resPlatillos->json();
+
+        $listaPlatillos = $jsonPlatillos['data']['platillos'] ?? [];
+        $platillos = collect($listaPlatillos);
+
+        $detalles = $pedido['detalles'] ?? [];
+        foreach ($detalles as $key => $detalle) {
+            $infoPlatillo = $platillos->where('id', $detalle['platillo_id'])->first();
+            $detalles[$key]['nombre_platillo'] = $infoPlatillo['nombre'] ?? 'Platillo #' . $detalle['platillo_id'];
+        }
+
+        $pedido['detalles'] = $detalles;
+
+        return view('pedidos.show', compact('pedido'));
     }
-    
-    $pedido['detalles'] = $detalles;
 
-    return view('pedidos.show', compact('pedido'));
-}
+    public function destroy($id)
+    {
+        $token = session('cliente_token');
 
-public function destroy($id)
+        // Enviamos la petición DELETE a la API
+        $response = Http::withToken($token)->delete("http://127.0.0.1:8000/api/pedidos/{$id}");
+
+        if ($response->successful()) {
+            return redirect()->route('pedidos.index')->with('success', 'Pedido cancelado correctamente.');
+        }
+
+        return back()->with('error', 'No se pudo cancelar el pedido.');
+    }
+
+    // ==========================================
+    // 1. Mostrar la vista con el botón de PayPal
+    // ==========================================
+    public function pagar($id)
 {
     $token = session('cliente_token');
-
-    // Enviamos la petición DELETE a la API
-    $response = Http::withToken($token)->delete("http://127.0.0.1:8000/api/pedidos/{$id}");
+    $response = Http::withToken($token)->get("http://127.0.0.1:8000/api/pedidos/{$id}");
 
     if ($response->successful()) {
-        return redirect()->route('pedidos.index')->with('success', 'Pedido cancelado correctamente.');
+        $json = $response->json();
+        $pedido = $json['data']['pedido']; 
+
+        //Si ya está pagado, no dejamos entrar aquí
+        if (($pedido['estado_pago'] ?? null) === 'completado') {
+            return redirect()->route('pedidos.index')->with('mensaje', 'Este pedido ya fue pagado.');
+        }
+
+        return view('pedidos.pagar', compact('pedido'));
     }
 
-    return back()->with('error', 'No se pudo cancelar el pedido.');
+    return redirect()->route('pedidos.index')->with('error', 'No se pudo obtener el pedido.');
+}
+    // ==========================================
+    // 2. Avisar a la API que PayPal aprobó el pago
+    // ==========================================
+    public function confirmarPago($pedidoId, $transaccionId)
+{
+    $token = session('cliente_token');
+
+    $response = Http::withToken($token)
+        ->post("http://127.0.0.1:8000/api/pedidos/pago/{$pedidoId}", [
+            'id_transaccion' => $transaccionId
+        ]);
+
+    if ($response->successful()) {
+        return redirect()->route('pedidos.show', $pedidoId)
+            ->with('mensaje', '¡Pago procesado con éxito!'); 
+    }
+
+    return back()->with('error', 'Algo falló');
 }
 }
